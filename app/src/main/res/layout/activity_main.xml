@@ -46,13 +46,42 @@
             app:layout_constraintEnd_toStartOf="@+id/txtEconomy" android:layout_marginEnd="8dp"/>
     <TextView
             android:text="$0.00"
-            android:layout_width="324dp"
-            android:layout_height="124dp"
+            android:layout_width="183dp"
+            android:layout_height="56dp"
             android:id="@+id/dispCost" android:layout_marginBottom="8dp"
             app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp" android:gravity="center_vertical|center_horizontal"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical|center_horizontal"
             android:textSize="36sp" android:textStyle="bold" android:textAlignment="center"
             android:textAllCaps="false"/>
+    <TextView
+            android:text="0L"
+            android:layout_width="185dp"
+            android:layout_height="56dp"
+            android:id="@+id/dispFuel" android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:gravity="center_vertical|center_horizontal"
+            android:textSize="36sp" android:textStyle="bold" android:textAlignment="center"
+            android:textAllCaps="false" app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"/>
+    <Button
+            android:text="New Trip"
+            android:layout_width="176dp"
+            android:layout_height="98dp"
+            android:id="@+id/btnNewTrip" app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/btnUpdateFuel" app:layout_constraintTop_toTopOf="@+id/btnUpdateFuel"
+            style="@style/Widget.AppCompat.Button.Colored"/>
+    <Button
+            android:text="Update Fuel Details"
+            android:layout_width="182dp"
+            android:layout_height="98dp" tools:layout_editor_absoluteY="131dp"
+            android:id="@+id/btnUpdateFuel" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
+            style="@style/Widget.AppCompat.Button.Colored"/>
+    <TextView
+            android:layout_width="345dp"
+            android:layout_height="196dp"
+            android:id="@+id/dispHistory" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp" app:layout_constraintBottom_toTopOf="@+id/dispCost"
+            android:layout_marginTop="8dp" app:layout_constraintTop_toBottomOf="@+id/btnUpdateFuel"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
