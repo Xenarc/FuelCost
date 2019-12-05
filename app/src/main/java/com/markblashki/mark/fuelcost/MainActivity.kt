@@ -109,8 +109,8 @@ class MainActivity : Activity() {
         // Update FuelClock
         CurrentSpeed = 16.67
         currentFuelUsage += (CurrentSpeed/3600)*Economy/100/Granularity
-        dispFuel.text = DecimalFormat("#.0000L").format(currentFuelUsage)
-        dispCost.text = DecimalFormat("$#.0000").format(currentFuelUsage*CostofFuel/100)
+        dispFuel.text = DecimalFormat("0.0000L").format(currentFuelUsage)
+        dispCost.text = DecimalFormat("$0.0000").format(currentFuelUsage*CostofFuel/100)
     }
 
     private fun btnUpdateFuelClicked() {
@@ -129,7 +129,6 @@ class MainActivity : Activity() {
     }
 
     private fun btnPausePlayClicked(){
-        dispHistory.text = pausePlay.toString()
         // pause = 2; play = 1; none = 0
         if(pausePlay == 0) {
             btnPausePlay.text = ""
@@ -154,14 +153,15 @@ class MainActivity : Activity() {
 
     private fun btnNewTripClicked() {
         // Pause Play
-        dispHistory.text = pausePlay.toString()
-        pausePlay = 2
+        pausePlay = 1   // Start Paused
         btnPausePlayClicked()
+        dispCost.text = "0.0000L"
+        dispFuel.text = "$0.0000"
 
         // Update Fuel Details
         currentFuelUsage = 0.0
-        fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)   // Removed old
-        updateFuel()    // Start New
+//        fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)   // Removed old
+//        updateFuel()    // Start New
     }
 
     override fun onResume() {
@@ -250,8 +250,6 @@ class MainActivity : Activity() {
     private var locationListenerGPS: LocationListener = object : LocationListener {
         @SuppressLint("SetTextI18n")
         override fun onLocationChanged(location: Location) {
-            dispHistory.text = dispHistory.text.toString() + "~"
-
             currentLocation = getLastKnownLocation()
             CurrentSpeed = currentLocation?.speed?.times(3.6)!!
         }
