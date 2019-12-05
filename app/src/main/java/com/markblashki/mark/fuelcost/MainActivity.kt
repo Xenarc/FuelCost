@@ -37,6 +37,7 @@ class MainActivity : Activity() {
     private lateinit var viewHistoryOutput: TextView
     private lateinit var btnNewTrip: Button
     private lateinit var btnUpdateFuel: Button
+    private lateinit var btnPausePlay: Button
 
     // Location variables
     private var locationPermitted = false
@@ -48,6 +49,8 @@ class MainActivity : Activity() {
     private lateinit var provider: LocationProvider
     private var currentLocation: Location? = null
     private lateinit var oldLocation: Location
+    private var pausePlay = 0 // pause = 2; play = 1; none = 0
+    private val Granularity = 10.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,9 +62,8 @@ class MainActivity : Activity() {
         fuelUpdateHandler = Handler(Looper.getMainLooper())
         fuelUpdateRunnable = Runnable {
             updateFuelClock()
-            fuelUpdateHandler.postDelayed(fuelUpdateRunnable, 1000)
+            fuelUpdateHandler.postDelayed(fuelUpdateRunnable, (1000/Granularity).toLong())
         }
-
 
         // Check if permissions are enabled
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -85,10 +87,9 @@ class MainActivity : Activity() {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), POSITION_CODE)
             }
-        } // Permissions allowed v
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        ) {
+        }
+        else{
             initLocationObjects()
 
             //Request location updates:
@@ -97,10 +98,6 @@ class MainActivity : Activity() {
                 500,
                 5.0f, locationListenerGPS)
         }
-
-        // Set OnClick Listeners for the buttons
-        btnUpdateFuel.setOnClickListener {btnUpdateFuelClicked()}
-        btnNewTrip.setOnClickListener {btnNewTripClicked()}
     }
 
     private fun updateFuel() {
@@ -111,9 +108,9 @@ class MainActivity : Activity() {
     private fun updateFuelClock() {
         // Update FuelClock
         CurrentSpeed = 16.67
-        currentFuelUsage += (CurrentSpeed/3600)*Economy/100
-        dispFuel.text = DecimalFormat("#.####L").format(currentFuelUsage)
-        dispCost.text = DecimalFormat("$#.####").format(currentFuelUsage*CostofFuel/100)
+        currentFuelUsage += (CurrentSpeed/3600)*Economy/100/Granularity
+        dispFuel.text = DecimalFormat("#.0000L").format(currentFuelUsage)
+        dispCost.text = DecimalFormat("$#.0000").format(currentFuelUsage*CostofFuel/100)
     }
 
     private fun btnUpdateFuelClicked() {
@@ -131,11 +128,40 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun btnPausePlayClicked(){
+        dispHistory.text = pausePlay.toString()
+        // pause = 2; play = 1; none = 0
+        if(pausePlay == 0) {
+            btnPausePlay.text = ""
+
+        } else if(pausePlay == 1) {
+            btnPausePlay.text = "Play"
+            pausePlay = 2
+
+            fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)
+
+        } else if(pausePlay == 2) {
+            btnPausePlay.text = "Pause"
+            pausePlay = 1
+
+            updateFuel()
+
+        } else {
+            btnPausePlay.text = ""
+            pausePlay = 0
+        }
+    }
+
     private fun btnNewTripClicked() {
+        // Pause Play
+        dispHistory.text = pausePlay.toString()
+        pausePlay = 2
+        btnPausePlayClicked()
+
         // Update Fuel Details
-        fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)
-        updateFuel()
         currentFuelUsage = 0.0
+        fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)   // Removed old
+        updateFuel()    // Start New
     }
 
     override fun onResume() {
@@ -173,6 +199,12 @@ class MainActivity : Activity() {
 
         btnNewTrip = findViewById<View>(R.id.btnNewTrip) as Button
         btnUpdateFuel = findViewById<View>(R.id.btnUpdateFuel) as Button
+        btnPausePlay = findViewById<View>(R.id.btnPausePlay) as Button
+
+        // Set OnClick Listeners for the buttons
+        btnUpdateFuel.setOnClickListener {btnUpdateFuelClicked()}
+        btnNewTrip.setOnClickListener {btnNewTripClicked()}
+        btnPausePlay.setOnClickListener {btnPausePlayClicked()}
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
