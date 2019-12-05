@@ -19,11 +19,57 @@ import android.location.LocationListener
 import android.location.LocationProvider
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
+import android.view.MotionEvent
+import androidx.core.view.GestureDetectorCompat
 import kotlinx.android.synthetic.main.activity_main.*
 import java.text.DecimalFormat
 
 
-class MainActivity : Activity() {
+class MainActivity : Activity(), GestureDetector.OnDoubleTapListener,
+    GestureDetector.OnGestureListener {
+    override fun onSingleTapUp(p0: MotionEvent?): Boolean {
+        return true
+    }
+
+    override fun onDown(p0: MotionEvent?): Boolean {
+        return true
+    }
+
+    override fun onFling(p0: MotionEvent?, p1: MotionEvent?, p2: Float, p3: Float): Boolean {
+        return true
+    }
+
+    override fun onScroll(p0: MotionEvent?, p1: MotionEvent?, p2: Float, p3: Float): Boolean{
+        return true
+    }
+
+    override fun onLongPress(p0: MotionEvent?) {}
+
+    override fun onShowPress(p0: MotionEvent?) {}
+
+    override fun onSingleTapConfirmed(p0: MotionEvent?): Boolean {
+        return true
+    }
+
+    override fun onDoubleTapEvent(p0: MotionEvent?): Boolean {
+        return true
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        return if (gestureDetector.onTouchEvent(event)) {
+            true
+        } else {
+            super.onTouchEvent(event)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    override fun onDoubleTap(p0: MotionEvent?): Boolean {
+        dispHistory.text = dispHistory.text.toString() + "X\n"
+        return true
+    }
+
     // Internal Calculation Variables
     private var CostofFuel = 0.0
     private var Economy = 0.0
@@ -51,6 +97,11 @@ class MainActivity : Activity() {
     private lateinit var oldLocation: Location
     private var pausePlay = 0 // pause = 2; play = 1; none = 0
     private val Granularity = 10.0
+    // TODO: tidy up vars
+
+    // Gesture
+    private lateinit var gestureDetector: GestureDetectorCompat
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +115,10 @@ class MainActivity : Activity() {
             updateFuelClock()
             fuelUpdateHandler.postDelayed(fuelUpdateRunnable, (1000/Granularity).toLong())
         }
+
+        // Gesture
+        gestureDetector = GestureDetectorCompat(this, this)
+        gestureDetector.setOnDoubleTapListener(this)
 
         // Check if permissions are enabled
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
