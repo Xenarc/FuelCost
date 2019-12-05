@@ -107,7 +107,6 @@ class MainActivity : Activity() {
     @SuppressLint("SetTextI18n")
     private fun updateFuelClock() {
         // Update FuelClock
-        CurrentSpeed = 16.67
         currentFuelUsage += (CurrentSpeed/3600)*Economy/100/Granularity
         dispFuel.text = DecimalFormat("0.0000L").format(currentFuelUsage)
         dispCost.text = DecimalFormat("$0.0000").format(currentFuelUsage*CostofFuel/100)
@@ -155,8 +154,8 @@ class MainActivity : Activity() {
         // Pause Play
         pausePlay = 1   // Start Paused
         btnPausePlayClicked()
-        dispCost.text = "0.0000L"
-        dispFuel.text = "$0.0000"
+        dispFuel.text = "0.0000L"
+        dispCost.text = "$0.0000"
 
         // Update Fuel Details
         currentFuelUsage = 0.0
