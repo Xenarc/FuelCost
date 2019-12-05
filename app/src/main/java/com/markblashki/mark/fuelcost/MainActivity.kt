@@ -1,6 +1,7 @@
 package com.markblashki.mark.fuelcost
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.location.LocationManager
 import android.app.Activity
@@ -15,9 +16,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.location.Location
 import android.location.LocationListener
-import android.widget.Toast
-
-
+import android.location.LocationProvider
+import android.os.Handler
+import android.os.Looper
+import kotlinx.android.synthetic.main.activity_main.*
+import java.text.DecimalFormat
 
 
 class MainActivity : Activity() {
@@ -38,8 +41,12 @@ class MainActivity : Activity() {
     // Location variables
     private var locationPermitted = false
     private lateinit var locationManager: LocationManager
-    private lateinit var provider: String
-    private lateinit var currentLocation: Location
+    private var CurrentSpeed = 0.0
+    private var currentFuelUsage = 0.0
+    private lateinit var fuelUpdateHandler: Handler
+    private lateinit var fuelUpdateRunnable: Runnable
+    private lateinit var provider: LocationProvider
+    private var currentLocation: Location? = null
     private lateinit var oldLocation: Location
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +55,13 @@ class MainActivity : Activity() {
 
         // Sets the view variables from the UI
         initialiseViews()
+        // Init the Fuel Update Handler and the runnable so that they are initialised to run every 1s
+        fuelUpdateHandler = Handler(Looper.getMainLooper())
+        fuelUpdateRunnable = Runnable {
+            updateFuelClock()
+            fuelUpdateHandler.postDelayed(fuelUpdateRunnable, 1000)
+        }
+
 
         // Check if permissions are enabled
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -60,7 +74,7 @@ class MainActivity : Activity() {
                 AlertDialog.Builder(this)
                     .setTitle("Location Request")
                     .setMessage("Location Features Must Be Enabled For This App To Operate")
-                    .setPositiveButton(android.R.string.ok) { dialogInterface, i ->
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
                         //Prompt the user once explanation has been shown
                         ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), POSITION_CODE)
                     }
@@ -80,8 +94,8 @@ class MainActivity : Activity() {
             //Request location updates:
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                750,
-                10.0f, locationListenerGPS)
+                500,
+                5.0f, locationListenerGPS)
         }
 
         // Set OnClick Listeners for the buttons
@@ -89,14 +103,21 @@ class MainActivity : Activity() {
         btnNewTrip.setOnClickListener {btnNewTripClicked()}
     }
 
-    private fun btnUpdateFuelClicked() {
-        // New Trip Code
-        doGPS()
+    private fun updateFuel() {
+        fuelUpdateHandler.post(fuelUpdateRunnable)
     }
 
-    private fun btnNewTripClicked() {
-        // Update Fuel Details
+    @SuppressLint("SetTextI18n")
+    private fun updateFuelClock() {
+        // Update FuelClock
+        CurrentSpeed = 16.67
+        currentFuelUsage += (CurrentSpeed/3600)*Economy/100
+        dispFuel.text = DecimalFormat("#.####L").format(currentFuelUsage)
+        dispCost.text = DecimalFormat("$#.####").format(currentFuelUsage*CostofFuel/100)
+    }
 
+    private fun btnUpdateFuelClicked() {
+        // New Trip Code
         CostofFuel = try {
             viewCostOfFuel.text.toString().toDouble()
         }catch (e: NumberFormatException){
@@ -110,6 +131,13 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun btnNewTripClicked() {
+        // Update Fuel Details
+        fuelUpdateHandler.removeCallbacks(fuelUpdateRunnable)
+        updateFuel()
+        currentFuelUsage = 0.0
+    }
+
     override fun onResume() {
         super.onResume()
         if (ContextCompat.checkSelfPermission(
@@ -119,8 +147,8 @@ class MainActivity : Activity() {
         ) {
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                750,
-                10.0f, locationListenerGPS)
+                500,
+                5.0f, locationListenerGPS)
 
         }
     }
@@ -132,7 +160,6 @@ class MainActivity : Activity() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-
             locationManager.removeUpdates(locationListenerGPS)
         }
     }
@@ -161,39 +188,40 @@ class MainActivity : Activity() {
     }
 
     private fun initLocationObjects() {
-        if (ContextCompat.checkSelfPermission( applicationContext, android.Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission( applicationContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission( applicationContext, Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission( applicationContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // No permissions, die
             invokeFailedLocationDialogue()
         }else {
             locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            provider = locationManager.getProvider(LocationManager.GPS_PROVIDER).toString()
+            provider = locationManager.getProvider(LocationManager.GPS_PROVIDER)
         }
     }
 
-    private fun doGPS() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            currentLocation = locationManager.getLastKnownLocation(provider)
+    private fun getLastKnownLocation(): Location? {
+        return if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val providers = locationManager.getProviders(true)
+            var bestLocation: Location? = null
+            for (provider in providers) {
+                val l = locationManager.getLastKnownLocation(provider) ?: continue
+                if (bestLocation == null || l.accuracy < bestLocation.accuracy) {
+                    // Found best last known location: %s", l);
+                    bestLocation = l
+                }
+            }
+            bestLocation
+        }else {
+            null
         }
-        val toast = Toast.makeText(
-            applicationContext,
-            currentLocation.latitude.toString(),
-            Toast.LENGTH_SHORT
-        )
-
-        toast.show()
     }
 
     private var locationListenerGPS: LocationListener = object : LocationListener {
-        override fun onLocationChanged(location: android.location.Location) {
-            val latitude = location.latitude
-            val longitude = location.longitude
-            val msg = "New Latitude: " + latitude + "New Longitude: " + longitude
-            Toast.makeText(baseContext, msg, Toast.LENGTH_LONG).show()
+        @SuppressLint("SetTextI18n")
+        override fun onLocationChanged(location: Location) {
+            dispHistory.text = dispHistory.text.toString() + "~"
+
+            currentLocation = getLastKnownLocation()
+            CurrentSpeed = currentLocation?.speed?.times(3.6)!!
         }
 
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
@@ -217,7 +245,6 @@ class MainActivity : Activity() {
         alertDialogBuilder.setMessage("Sorry, this app requires location services")
         alertDialogBuilder.setPositiveButton(android.R.string.ok) { _,_ ->
             finishAffinity()
-
         }
 
         val alertDialog = alertDialogBuilder.create()
